@@ -1,0 +1,24 @@
+{
+  "name": "ParseExcelFileTest",
+  "version": "0.1.0",
+  "description": "test",
+  "dependencies": {
+    "jszip": "^2.5.0",
+    "react": "^0.13.3",
+    "react-dropzone": "^1.2.4",
+    "xlsx": "*",
+    "express": "*",
+    "socket.io": "*",
+    "mysql": "*"
+  },
+  "devDependencies": {
+    "browserify": "^11.0.1",
+    "reactify": "^1.1.1",
+    "uglify-js": "^2.4.24",
+    "watchify": "^3.3.1"
+  },
+  "scripts": {
+    "start": "watchify -t [reactify --extension react] -o js/bundle.js -v -d js/app.js",
+    "build": "browserify -t [reactify --extension react] | uglifyjs -cm > js/bundle.js"
+  }
+}
