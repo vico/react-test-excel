@@ -4,6 +4,7 @@
 
 var React = require('react');
 var jszip = require('jszip');
+var TicketTable = require('./components/TicketTable.react');
 
 var Dropzone = require('react-dropzone');
 
@@ -43,55 +44,129 @@ function s2ab(s) {
   return [v, b];
 };
 
+function xw_xfer(data, cb) {
+  var worker = new Worker(rABS ? XW.rABS : XW.norABS);
+  worker.onmessage = function(e) {
+    switch(e.data.t) {
+      case 'ready': break;
+      case 'e': console.error(e.data.d); break;
+      default: xx=ab2str(e.data).replace(/\n/g,"\\n").replace(/\r/g,"\\r"); console.log("done"); cb(JSON.parse(xx)); break;
+    }
+  };
+  if(rABS) {
+    var val = s2ab(data);
+    worker.postMessage(val[1], [val[1]]);
+  } else {
+    worker.postMessage(data, [data]);
+  }
+};
+
+
+function xw(data, cb) {
+  if(transferable) xw_xfer(data, cb);
+  else xw_noxfer(data, cb);
+};
+
+function process_ticket_order_wb(wb) {
+  var sheetNameList = wb.SheetNames;
+  var tickets = [];
+
+  sheetNameList.forEach(function(y) {
+    var ws = wb.Sheets[y];
+    var pattern = /([A-Z]+)([0-9]+)/;
+
+    var lastRow = -1;
+    var tradeRow = {};
+    for (z in ws) {
+      // all keys that do not begin with "!" correspond to cell address
+      if (z[0] === '!') continue;
+      //console.log(y + "!" + z + "=" + JSON.stringify(ws[z].v) + " type:" + ( typeof z)+ " " + (typeof ws[z].v));
+      var matches = pattern.exec(z); // extract column string and row number
+      var colStr, row;
+      if (matches) {
+        colStr = matches[1];
+        row    = matches[2];
+        if (row >= 3) { // data start from row 3
+          //console.log("col="+ colStr + " row="+ row+ " value=" +JSON.stringify(ws[z].v));
+          if (lastRow !== -1 && lastRow !== row) {
+            tickets.push(tradeRow);
+            console.log("tradeRow="+ tradeRow);
+            tradeRow = {};
+            lastRow  = row;
+          }
+
+          if (lastRow === -1) {
+            lastRow = row;
+          }
+
+
+          switch (colStr) {
+            case 'A':
+              tradeRow['orderNumber'] = ws[z].v;
+              break;
+            case 'B':
+              tradeRow['date'] = ws[z].v;
+              break;
+            case 'C':
+              tradeRow['fund'] = ws[z].v;
+              break;
+            case 'D':
+              tradeRow['code'] = ws[z].v;
+              break;
+            case 'E':
+              tradeRow['name'] = ws[z].v;
+              break;
+            case 'F':
+              tradeRow['orderType'] = ws[z].v;
+              break;
+            case 'G':
+              tradeRow['orderSize'] = ws[z].v;
+              break;
+            case 'H':
+              tradeRow['limitPrice'] = ws[z].v;
+              break;
+            case 'I':
+              tradeRow['tradeType'] = ws[z].v;
+              break;
+            case 'J':
+              tradeRow['brokerCode'] = ws[z].v;
+              break;
+          } //end switch
+        } //end if
+      }
+    }
+  });
+  return tickets;
+};
+
+
 var DropzoneDemo = React.createClass({
 
-  xw_xfer: function(data, cb) {
-  	var worker = new Worker(rABS ? XW.rABS : XW.norABS);
-  	worker.onmessage = function(e) {
-  		switch(e.data.t) {
-  			case 'ready': break;
-  			case 'e': console.error(e.data.d); break;
-  			default: xx=ab2str(e.data).replace(/\n/g,"\\n").replace(/\r/g,"\\r"); console.log("done"); cb(JSON.parse(xx)); break;
-  		}
-  	};
-  	if(rABS) {
-  		var val = s2ab(data);
-  		worker.postMessage(val[1], [val[1]]);
-  	} else {
-  		worker.postMessage(data, [data]);
-  	}
+  getInitialState: function() {
+    return {orderTicket: []};
   },
-  xw: function (data, cb) {
-  	if(transferable) this.xw_xfer(data, cb);
-  	else this.xw_noxfer(data, cb);
-  },
-  process_wb: function(wb) {
-    var sheetNameList = wb.SheetNames;
 
-    sheetNameList.forEach(function(y) {
-      var ws = wb.Sheets[y];
-      for (z in ws) {
-        // all keys that do not begin with "!" correspond to cell address
-        if (z[0] === '!') continue;
-        console.log(y + "!" + z + "=" + JSON.stringify(ws[z].v));
-      }
-    });
-  },
   onDrop: function( files ) {
             console.log('Received files: ', files[0].name);
             var reader = new FileReader();
             var f = files[0];
 		        var name = f.name;
-
+            var setState = this.setState;
             reader.onload = function(e) {
         			if(typeof console !== 'undefined') console.log("onload", new Date(), rABS, use_worker);
         			var data = e.target.result;
               var wb;
-              this.xw(data, this.process_wb);
-        			
+              if (name.match(/Order_[A-Z][a-z]{2}_[0-9]{2}[A-Z]{2}.xlsx/)) {
+                //xw(data, process_ticket_order_wb,setState);
+                var arr = fixdata(data);
+					      wb = X.read(btoa(arr), {type: 'base64'});
+                var tickets = process_ticket_order_wb(wb);
+                this.setState({orderTicket: tickets});
+              }
+
         		}.bind(this);
-            //reader.readAsArrayBuffer(f);
-            reader.readAsBinaryString(f);
+            reader.readAsArrayBuffer(f);
+            //reader.readAsBinaryString(f);
           },
   render: function() {
             return(
@@ -99,6 +174,7 @@ var DropzoneDemo = React.createClass({
                 <Dropzone onDrop={this.onDrop} width={150} height={100}>
                   <div> Drop Excel files here</div>
                 </Dropzone>
+                <TicketTable data={this.state.orderTicket} />
               </div>
             );
           }

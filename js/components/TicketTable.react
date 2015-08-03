@@ -1,0 +1,44 @@
+/*
+ * @jsx React.DOM
+ */
+
+var React = require('react');
+
+var TableRow = React.createClass({
+  render: function() {
+    return (
+      <tr>
+        <td>{this.props.data.orderNumber}</td>
+        <td>{this.props.data.date}</td>
+        <td>{this.props.data.fund}</td>
+        <td>{this.props.data.code}</td>
+        <td>{this.props.data.name}</td>
+        <td>{this.props.data.orderType}</td>
+        <td>{this.props.data.orderSize}</td>
+        <td>{this.props.data.brokerCode}</td>
+      </tr>
+    );
+  }
+});
+
+var TicketTable = React.createClass({
+  render: function() {
+    var rows = [];
+    this.props.data.forEach( function(d){
+      rows.push(<TableRow data={d} key={d.orderNumber}/>)
+    });
+    return (
+      <table>
+        <thead>
+          <th>Order#</th><th>Date</th><th>Fund</th><th>Code</th><th>Name</th>
+          <th>Order Type</th><th>Order Size</th><th>Broker Code</th>
+        </thead>
+        <tbody>
+          {rows}
+        </tbody>
+      </table>
+    );
+  }
+});
+
+module.exports = TicketTable;
