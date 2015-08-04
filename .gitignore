@@ -1,4 +1,4 @@
 node_modules
 .DS_Store
-js/bundle.js
-js/bundle.min.js
+**/bundle.js
+**/bundle.min.js
