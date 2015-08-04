@@ -6,6 +6,10 @@ var React = require('react');
 
 var TableRow = React.createClass({
   render: function() {
+    var rh = (this.props.data.RH ? this.props.data.RH : 0);
+    var ya = (this.props.data.YA ? this.props.data.YA : 0);
+    var lr = (this.props.data.LR ? this.props.data.LR : 0);
+    var ret =this.props.data.orderSize === rh+ya+lr ? 'OK' : 'not equal';
     return (
       <tr>
         <td>{this.props.data.orderNumber}</td>
@@ -16,6 +20,11 @@ var TableRow = React.createClass({
         <td>{this.props.data.orderType}</td>
         <td>{this.props.data.orderSize}</td>
         <td>{this.props.data.brokerCode}</td>
+        <td>{this.props.data.RH}</td>
+        <td>{this.props.data.YA}</td>
+        <td>{this.props.data.LR}</td>
+        <td>{rh+ya+lr}</td>
+        <td>{ret}</td>
       </tr>
     );
   }
@@ -32,6 +41,7 @@ var TicketTable = React.createClass({
         <thead>
           <th>Order#</th><th>Date</th><th>Fund</th><th>Code</th><th>Name</th>
           <th>Order Type</th><th>Order Size</th><th>Broker Code</th>
+          <th>RH</th><th>YA</th><th>LR</th><th>Sum</th><th>Comparison Result</th>
         </thead>
         <tbody>
           {rows}
